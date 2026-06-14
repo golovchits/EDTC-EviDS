@@ -1,0 +1,17 @@
+*.idea
+*~
+*__pycache__*
+*.pyc
+*.pytest_cache
+*.csv
+local.py
+data
+
+# Model checkpoints — download links in CHECKPOINTS.md
+pretrained_models/
+
+# Training output artifacts
+yolov5/runs/
+
+.DS_Store
+*.log
