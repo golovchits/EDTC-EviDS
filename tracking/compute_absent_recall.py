@@ -171,6 +171,7 @@ def main():
     # Collect all confidences and labels
     all_conf, all_gt = [], []
     all_det_mask, all_trk_mask = [], []
+    all_box = []
     for f in npz_files:
         npz = np.load(f)
         conf, det_mask, trk_mask = build_confidence(npz)
@@ -179,11 +180,20 @@ def main():
         all_gt.append(gt)
         all_det_mask.append(det_mask)
         all_trk_mask.append(trk_mask)
+        all_box.append(npz['pred_present'].astype(bool))
 
     all_conf = np.concatenate(all_conf)
     all_gt = np.concatenate(all_gt)
     all_det = np.concatenate(all_det_mask)
     all_trk = np.concatenate(all_trk_mask)
+    all_box = np.concatenate(all_box)
+
+    # Tracker-on-absent rate (TrkOnAbs) and the number of absent frames on which a box is output (AbsBox):
+    # a higher TrkOnAbs is only a benefit if the tracker outputs no box on those frames.
+    absent = ~all_gt
+    trk_on_absent = float((absent & all_trk).sum() / absent.sum())
+    boxes_on_absent = int((absent & all_box).sum())
+    print(f'TrkOnAbs: {trk_on_absent:.1%}  AbsBox (absent frames with a box): {boxes_on_absent}')
 
     # Compute at each threshold
     print(f'\n{"="*70}')
@@ -192,7 +202,7 @@ def main():
     print(f'{"="*70}')
 
     results = {'label': args.label, 'n_sequences': len(npz_files),
-               'thresholds': {}}
+               'thresholds': {}, 'trk_on_absent': trk_on_absent, 'boxes_on_absent': boxes_on_absent}
 
     for tau in args.thresholds:
         m = absent_metrics(all_conf, all_gt, all_det, all_trk, tau)
